@@ -3,7 +3,7 @@
 MathEx is a single-page math practice tool that helps you drill skills like addition, multiplication, fractions, roots and more. It stores your progress in the browser and shows detailed statistics after each session.
 
 ## Features
-- Choose practice types and difficulty levels
+- Choose practice types and difficulty levels (Easy, Medium, Hard, or Adaptive)
 - Fixed-question or timed modes
 - Tracks accuracy and speed
 - Results visualized with bar and pie charts

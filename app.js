@@ -20,6 +20,8 @@
             const sessionHistoryTableHeaders = document.querySelectorAll('#session-history-table th.sortable');
 
             let questions = [], currentQuestionIndex = 0, results = [], timer, timeElapsed = 0, questionStartTime, gameSettings = {}, profileData, isSubmitting = false;
+            let currentDifficultyIndex = 0, correctStreak = 0;
+            const difficultyLevels = ['easy', 'medium', 'hard'];
             let currentSort = { column: 'date', direction: 'desc' };
 
             // --- THEME ---
@@ -573,6 +575,10 @@
                 if (cubeRootCheckbox.checked) practiceTypes.push('cube-root');
                 if (practiceTypes.length === 0) return;
                 gameSettings = { practiceTypes, difficulty: document.getElementById('difficulty').value, mode: modeSelect.value, numQuestions: parseInt(document.getElementById('num-questions').value), timeLimit: parseInt(document.getElementById('time-limit').value) };
+                if (gameSettings.difficulty === 'adaptive') {
+                    currentDifficultyIndex = 0;
+                    correctStreak = 0;
+                }
                 generateQuestions();
                 resetGameState();
                 showPage('problem', navLinks.practice);
@@ -581,60 +587,64 @@
             }
 
             function generateQuestions() {
+                if (gameSettings.difficulty === 'adaptive') {
+                    questions = [];
+                    return;
+                }
                 let combinedQuestions = [];
-                if (gameSettings.practiceTypes.includes('addition')) combinedQuestions.push(...generateAdditionQuestions());
-                if (gameSettings.practiceTypes.includes('squaring')) combinedQuestions.push(...generateSquaringQuestions());
-                if (gameSettings.practiceTypes.includes('multiplication')) combinedQuestions.push(...generateMultiplicationQuestions());
-                if (gameSettings.practiceTypes.includes('fractions')) combinedQuestions.push(...generateFractionQuestions());
-                if (gameSettings.practiceTypes.includes('cubes')) combinedQuestions.push(...generateCubeQuestions());
-                if (gameSettings.practiceTypes.includes('square-root')) combinedQuestions.push(...generateSquareRootQuestions());
-                if (gameSettings.practiceTypes.includes('cube-root')) combinedQuestions.push(...generateCubeRootQuestions());
-                
+                if (gameSettings.practiceTypes.includes('addition')) combinedQuestions.push(...generateAdditionQuestions(gameSettings.difficulty));
+                if (gameSettings.practiceTypes.includes('squaring')) combinedQuestions.push(...generateSquaringQuestions(gameSettings.difficulty));
+                if (gameSettings.practiceTypes.includes('multiplication')) combinedQuestions.push(...generateMultiplicationQuestions(gameSettings.difficulty));
+                if (gameSettings.practiceTypes.includes('fractions')) combinedQuestions.push(...generateFractionQuestions(gameSettings.difficulty));
+                if (gameSettings.practiceTypes.includes('cubes')) combinedQuestions.push(...generateCubeQuestions(gameSettings.difficulty));
+                if (gameSettings.practiceTypes.includes('square-root')) combinedQuestions.push(...generateSquareRootQuestions(gameSettings.difficulty));
+                if (gameSettings.practiceTypes.includes('cube-root')) combinedQuestions.push(...generateCubeRootQuestions(gameSettings.difficulty));
+
                 combinedQuestions.sort(() => 0.5 - Math.random());
                 questions = (gameSettings.mode === 'fixed_questions') ? combinedQuestions.slice(0, gameSettings.numQuestions) : combinedQuestions;
             }
 
-            function generateAdditionQuestions() {
+            function generateAdditionQuestions(diff = gameSettings.difficulty) {
                 const ranges = { easy: { r1: [10, 99], r2: [10, 99] }, medium: { r1: [10, 99], r2: [100, 999] }, hard: { r1: [100, 999], r2: [100, 999] } };
-                const { r1, r2 } = ranges[gameSettings.difficulty];
+                const { r1, r2 } = ranges[diff];
                 const getRandom = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
                 let addQuestions = [], limit = (gameSettings.mode === 'fixed_questions') ? gameSettings.numQuestions : 50;
                 for (let i = 0; i < limit; i++) {
                     let num1 = getRandom(r1[0], r1[1]), num2 = getRandom(r2[0], r2[1]);
-                    if (gameSettings.difficulty === 'medium' && Math.random() > 0.5) [num1, num2] = [num2, num1];
+                    if (diff === 'medium' && Math.random() > 0.5) [num1, num2] = [num2, num1];
                     addQuestions.push({ text: `${num1} + ${num2} = ?`, correctAnswer: num1 + num2, isDecimal: false });
                 }
                 return addQuestions;
             }
             
-            function generateSquaringQuestions() {
+            function generateSquaringQuestions(diff = gameSettings.difficulty) {
                 const ranges = { easy: { min: 2, max: 20 }, medium: { min: 21, max: 40 }, hard: { min: 41, max: 70 } };
-                const { min, max } = ranges[gameSettings.difficulty];
+                const { min, max } = ranges[diff];
                 return Array.from({length: max - min + 1}, (_, i) => i + min).map(num => ({ text: `${num}² = ?`, correctAnswer: num * num, isDecimal: false }));
             }
-            
-            function generateCubeQuestions() {
+
+            function generateCubeQuestions(diff = gameSettings.difficulty) {
                 const ranges = { easy: { min: 1, max: 10 }, medium: { min: 11, max: 20 }, hard: { min: 21, max: 30 } };
-                const { min, max } = ranges[gameSettings.difficulty];
+                const { min, max } = ranges[diff];
                 return Array.from({length: max - min + 1}, (_, i) => i + min).map(num => ({ text: `${num}³ = ?`, correctAnswer: num * num * num, isDecimal: false }));
             }
-            
-            function generateSquareRootQuestions() {
+
+            function generateSquareRootQuestions(diff = gameSettings.difficulty) {
                 const ranges = { easy: { min: 2, max: 20 }, medium: { min: 21, max: 40 }, hard: { min: 41, max: 70 } };
-                const { min, max } = ranges[gameSettings.difficulty];
+                const { min, max } = ranges[diff];
                 return Array.from({length: max - min + 1}, (_, i) => i + min).map(num => ({ text: `√${num * num} = ?`, correctAnswer: num, isDecimal: false }));
             }
-            
-            function generateCubeRootQuestions() {
+
+            function generateCubeRootQuestions(diff = gameSettings.difficulty) {
                 const ranges = { easy: { min: 1, max: 10 }, medium: { min: 11, max: 20 }, hard: { min: 21, max: 30 } };
-                const { min, max } = ranges[gameSettings.difficulty];
+                const { min, max } = ranges[diff];
                 return Array.from({length: max - min + 1}, (_, i) => i + min).map(num => ({ text: `³√${num * num * num} = ?`, correctAnswer: num, isDecimal: false }));
             }
 
 
-            function generateMultiplicationQuestions() {
+            function generateMultiplicationQuestions(diff = gameSettings.difficulty) {
                 const ranges = { easy: { r1: [2, 10], r2: [2, 12] }, medium: { r1: [2, 12], r2: [11, 30] }, hard: { r1: [11, 30], r2: [11, 40] } };
-                const { r1, r2 } = ranges[gameSettings.difficulty];
+                const { r1, r2 } = ranges[diff];
                 const getRandom = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
                 let generatedPairs = new Set(), multQuestions = [], limit = (gameSettings.mode === 'fixed_questions') ? gameSettings.numQuestions : 100;
                 while (multQuestions.length < limit) {
@@ -644,7 +654,7 @@
                 return multQuestions;
             }
 
-            function generateFractionQuestions() {
+            function generateFractionQuestions(diff = gameSettings.difficulty) {
                 const getRandom = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
                 const limit = (gameSettings.mode === 'fixed_questions') ? gameSettings.numQuestions : 50;
                 let fractionQuestions = [];
@@ -653,9 +663,9 @@
                 const mediumDenominators = Array.from({length: 8}, (_, i) => i + 13); // 13 to 20
                 
                 let denominators = [];
-                if (gameSettings.difficulty === 'easy') {
+                if (diff === 'easy') {
                     denominators = easyDenominators;
-                } else if (gameSettings.difficulty === 'medium') {
+                } else if (diff === 'medium') {
                     denominators = mediumDenominators;
                 } else { // hard
                     denominators = [...easyDenominators, ...mediumDenominators];
@@ -665,7 +675,7 @@
                     const denominator = denominators[getRandom(0, denominators.length - 1)];
                     let numerator = 1;
 
-                    if (gameSettings.difficulty === 'hard') {
+                    if (diff === 'hard') {
                         numerator = getRandom(2, 10);
                     }
                     
@@ -677,6 +687,42 @@
                     });
                 }
                 return fractionQuestions;
+            }
+
+            // --- Single Question Generators for Adaptive Mode ---
+            function createAdditionQuestion(diff) { return generateAdditionQuestions(diff)[0]; }
+            function createSquaringQuestion(diff) {
+                const list = generateSquaringQuestions(diff);
+                return list[Math.floor(Math.random() * list.length)];
+            }
+            function createCubeQuestion(diff) {
+                const list = generateCubeQuestions(diff);
+                return list[Math.floor(Math.random() * list.length)];
+            }
+            function createSquareRootQuestion(diff) {
+                const list = generateSquareRootQuestions(diff);
+                return list[Math.floor(Math.random() * list.length)];
+            }
+            function createCubeRootQuestion(diff) {
+                const list = generateCubeRootQuestions(diff);
+                return list[Math.floor(Math.random() * list.length)];
+            }
+            function createMultiplicationQuestion(diff) { return generateMultiplicationQuestions(diff)[0]; }
+            function createFractionQuestion(diff) { return generateFractionQuestions(diff)[0]; }
+
+            function getAdaptiveQuestion() {
+                const diff = difficultyLevels[currentDifficultyIndex];
+                const types = gameSettings.practiceTypes;
+                const choice = types[Math.floor(Math.random() * types.length)];
+                switch (choice) {
+                    case 'addition': return createAdditionQuestion(diff);
+                    case 'squaring': return createSquaringQuestion(diff);
+                    case 'multiplication': return createMultiplicationQuestion(diff);
+                    case 'fractions': return createFractionQuestion(diff);
+                    case 'cubes': return createCubeQuestion(diff);
+                    case 'square-root': return createSquareRootQuestion(diff);
+                    case 'cube-root': return createCubeRootQuestion(diff);
+                }
             }
 
             function resetGameState() {
@@ -704,10 +750,17 @@
 
             function displayNextQuestion() {
                 const isFixedQuestionsEnd = gameSettings.mode === 'fixed_questions' && currentQuestionIndex >= gameSettings.numQuestions;
-                const isOutOfQuestions = currentQuestionIndex >= questions.length;
-                if (isFixedQuestionsEnd || isOutOfQuestions) { endGame(); return; }
-                
-                const currentQuestion = questions[currentQuestionIndex];
+                if (isFixedQuestionsEnd) { endGame(); return; }
+
+                let currentQuestion;
+                if (gameSettings.difficulty === 'adaptive') {
+                    currentQuestion = getAdaptiveQuestion();
+                    questions.push(currentQuestion);
+                } else {
+                    const isOutOfQuestions = currentQuestionIndex >= questions.length;
+                    if (isOutOfQuestions) { endGame(); return; }
+                    currentQuestion = questions[currentQuestionIndex];
+                }
                 questionEl.textContent = currentQuestion.text;
                 
                 if (currentQuestion.isDecimal) {
@@ -747,14 +800,27 @@
                     }
                 }
 
-                results.push({ 
-                    question: currentQuestion.text, 
-                    userAnswer, 
-                    correctAnswer: currentQuestion.correctAnswer, 
-                    isCorrect: isCorrect, 
-                    isSkipped: userAnswer === 'Skipped', 
-                    timeTaken: timeForQuestion 
+                results.push({
+                    question: currentQuestion.text,
+                    userAnswer,
+                    correctAnswer: currentQuestion.correctAnswer,
+                    isCorrect: isCorrect,
+                    isSkipped: userAnswer === 'Skipped',
+                    timeTaken: timeForQuestion
                 });
+
+                if (gameSettings.difficulty === 'adaptive') {
+                    if (isCorrect) {
+                        correctStreak++;
+                        if (correctStreak >= 2 && currentDifficultyIndex < difficultyLevels.length - 1) {
+                            currentDifficultyIndex++;
+                            correctStreak = 0;
+                        }
+                    } else {
+                        correctStreak = 0;
+                        if (currentDifficultyIndex > 0) currentDifficultyIndex--;
+                    }
+                }
                 
                 if (isCorrect) {
                      answerInput.classList.add('correct-flash');
