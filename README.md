@@ -20,3 +20,7 @@ The project now separates styles and scripts:
 - `app.js` – all JavaScript functionality
 
 Feel free to modify these files and open `index.html` to see changes. A network connection is required only for loading Google Fonts.
+
+## Hosting on GitHub Pages
+This site is completely static. To publish it on GitHub Pages, enable Pages in your repository settings and select the main branch.
+All files live in the repository root so no build step is needed.
